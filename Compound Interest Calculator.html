@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound Interest Calculator</title>
+    <style>
+        /* --- Basic Styling & Font --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- Main Calculator Container --- */
+        .calculator-container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        /* --- Form Styling --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+        
+        /* --- Button Styling --- */
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #27ae60;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #229954;
+        }
+
+        /* --- Results Section --- */
+        #results {
+            margin-top: 30px;
+            display: none; /* Hidden by default */
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+
+        .summary {
+            background-color: #eafaf1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .summary p {
+            margin: 8px 0;
+            font-size: 1.1rem;
+        }
+
+        .summary span {
+            font-weight: 700;
+            color: #1e8449;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        /* --- Yearly Breakdown Table --- */
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+            text-align: right;
+            position: sticky;
+            top: 0;
+        }
+        
+        th:first-child, td:first-child {
+            text-align: center;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator-container">
+        <h1>Compound Interest Calculator</h1>
+        <form id="calculator-form">
+            <div class="form-group">
+                <label for="principal">Initial Investment ($)</label>
+                <input type="number" id="principal" placeholder="e.g., 10000" min="1" step="any" required>
+            </div>
+            <div class="form-group">
+                <label for="rate">Annual Interest Rate (%)</label>
+                <input type="number" id="rate" placeholder="e.g., 7" min="0" step="any" required>
+            </div>
+            <div class="form-group">
+                <label for="years">Number of Years</label>
+                <input type="number" id="years" placeholder="e.g., 15" min="1" step="1" required>
+            </div>
+            <button type="submit">Calculate</button>
+        </form>
+
+        <div id="results">
+            <div class="summary">
+                <p>After <span id="summary-years"></span> years, your investment will be worth: <span id="final-balance"></span></p>
+                <p>Time to double your investment: <span id="doubling-time"></span></p>
+            </div>
+            
+            <h3>Yearly Breakdown</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Starting Balance</th>
+                            <th>Interest Earned</th>
+                            <th>Ending Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdown-table">
+                        <!-- Rows will be generated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('calculator-form').addEventListener('submit', function(event) {
+            // Prevent the form from submitting and reloading the page
+            event.preventDefault();
+
+            // --- 1. GET USER INPUT ---
+            const principal = parseFloat(document.getElementById('principal').value);
+            const rate = parseFloat(document.getElementById('rate').value);
+            const years = parseInt(document.getElementById('years').value);
+
+            // --- 2. VALIDATE INPUT ---
+            if (isNaN(principal) || isNaN(rate) || isNaN(years) || principal <= 0 || years <= 0 || rate < 0) {
+                alert("Please enter valid positive numbers for all fields.");
+                return;
+            }
+
+            // --- 3. CALCULATE AND BUILD THE YEARLY BREAKDOWN TABLE ---
+            const tableBody = document.getElementById('breakdown-table');
+            tableBody.innerHTML = ''; // Clear previous results
+            
+            let currentBalance = principal;
+            const rateDecimal = rate / 100;
+
+            for (let year = 1; year <= years; year++) {
+                const startingBalance = currentBalance;
+                const interestEarned = startingBalance * rateDecimal;
+                currentBalance += interestEarned;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="text-align: center;">${year}</td>
+                    <td>${formatCurrency(startingBalance)}</td>
+                    <td>${formatCurrency(interestEarned)}</td>
+                    <td>${formatCurrency(currentBalance)}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+            
+            // --- 4. CALCULATE DOUBLING TIME ---
+            // Formula: T = ln(2) / ln(1 + r)
+            let doublingTimeText;
+            if (rate > 0) {
+                const timeToDouble = Math.log(2) / Math.log(1 + rateDecimal);
+                doublingTimeText = `${timeToDouble.toFixed(2)} years`;
+            } else {
+                doublingTimeText = "Will not double at this rate.";
+            }
+
+            // --- 5. DISPLAY THE RESULTS ---
+            document.getElementById('summary-years').textContent = years;
+            document.getElementById('final-balance').textContent = formatCurrency(currentBalance);
+            document.getElementById('doubling-time').textContent = doublingTimeText;
+
+            // Make the results section visible
+            document.getElementById('results').style.display = 'block';
+        });
+
+        // Helper function to format numbers as currency
+        function formatCurrency(amount) {
+            return amount.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    </script>
+
+</body>
+</html>
